@@ -71,10 +71,10 @@ const statCards = [
 
 const quickActions = [
   { label: "Quick Scan", icon: Crosshair, href: "/scan/new", color: "text-purple-400", borderColor: "border-purple-500/30", hoverBg: "hover:bg-purple-500/10" },
-  { label: "Host Lookup", icon: Search, href: "/scan/new", color: "text-cyan-400", borderColor: "border-cyan-500/30", hoverBg: "hover:bg-cyan-500/10" },
-  { label: "Port Discovery", icon: Target, href: "/scan/new", color: "text-green-400", borderColor: "border-green-500/30", hoverBg: "hover:bg-green-500/10" },
-  { label: "OS Detection", icon: Cpu, href: "/scan/new", color: "text-orange-400", borderColor: "border-orange-500/30", hoverBg: "hover:bg-orange-500/10" },
-  { label: "Service Scan", icon: Radio, href: "/scan/new", color: "text-yellow-400", borderColor: "border-yellow-500/30", hoverBg: "hover:bg-yellow-500/10" },
+  { label: "Host Lookup", icon: Search, href: "/host/detail", color: "text-cyan-400", borderColor: "border-cyan-500/30", hoverBg: "hover:bg-cyan-500/10" },
+  { label: "NSE Scripts", icon: Target, href: "/tools/nse", color: "text-green-400", borderColor: "border-green-500/30", hoverBg: "hover:bg-green-500/10" },
+  { label: "Live Monitor", icon: Cpu, href: "/scan/live", color: "text-orange-400", borderColor: "border-orange-500/30", hoverBg: "hover:bg-orange-500/10" },
+  { label: "Topology Map", icon: Radio, href: "/tools/topology", color: "text-yellow-400", borderColor: "border-yellow-500/30", hoverBg: "hover:bg-yellow-500/10" },
   { label: "Vuln Assessment", icon: Shield, href: "/scan/new", color: "text-red-400", borderColor: "border-red-500/30", hoverBg: "hover:bg-red-500/10" },
 ];
 

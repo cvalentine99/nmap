@@ -10,6 +10,12 @@ import ScanResults from "./pages/ScanResults";
 import ScanHistory from "./pages/ScanHistory";
 import AuditLog from "./pages/AuditLog";
 import Settings from "./pages/Settings";
+import NseScripts from "./pages/NseScripts";
+import NmapReference from "./pages/NmapReference";
+import LiveScan from "./pages/LiveScan";
+import HostDetail from "./pages/HostDetail";
+import NetworkTopology from "./pages/NetworkTopology";
+import CidrManager from "./pages/CidrManager";
 import DashboardLayout from "./components/DashboardLayout";
 
 function Router() {
@@ -18,9 +24,16 @@ function Router() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/scan/new" component={ScanCreate} />
+        <Route path="/scan/live" component={LiveScan} />
         <Route path="/scan/results" component={ScanResults} />
         <Route path="/scan/results/:id" component={ScanResults} />
         <Route path="/history" component={ScanHistory} />
+        <Route path="/host/detail" component={HostDetail} />
+        <Route path="/host/:id" component={HostDetail} />
+        <Route path="/tools/nse" component={NseScripts} />
+        <Route path="/tools/reference" component={NmapReference} />
+        <Route path="/tools/topology" component={NetworkTopology} />
+        <Route path="/tools/cidr" component={CidrManager} />
         <Route path="/audit" component={AuditLog} />
         <Route path="/settings" component={Settings} />
         <Route path="/404" component={NotFound} />

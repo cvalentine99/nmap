@@ -2,6 +2,7 @@
  * DashboardLayout — Spectra Command Dark Theme
  * Persistent left sidebar with icon-only collapsed mode on mobile
  * Top header bar with search/command palette and user avatar
+ * Expanded navigation with Tools section for NMAP capabilities
  */
 import { useState, useEffect, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
@@ -20,6 +21,12 @@ import {
   X,
   Terminal,
   Crosshair,
+  Code2,
+  BookOpen,
+  Activity,
+  Server,
+  Network,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -32,13 +39,39 @@ interface NavItem {
   badge?: number;
 }
 
-const navItems: NavItem[] = [
-  { icon: LayoutDashboard, label: "Command Center", href: "/" },
-  { icon: Crosshair, label: "New Scan", href: "/scan/new" },
-  { icon: FileSearch, label: "Scan Results", href: "/scan/results" },
-  { icon: History, label: "Scan History", href: "/history" },
-  { icon: Shield, label: "Audit Log", href: "/audit" },
-  { icon: Settings, label: "Settings", href: "/settings" },
+interface NavGroup {
+  title: string;
+  items: NavItem[];
+}
+
+const navGroups: NavGroup[] = [
+  {
+    title: "Operations",
+    items: [
+      { icon: LayoutDashboard, label: "Command Center", href: "/" },
+      { icon: Crosshair, label: "New Scan", href: "/scan/new" },
+      { icon: Activity, label: "Live Scan", href: "/scan/live" },
+      { icon: FileSearch, label: "Scan Results", href: "/scan/results" },
+      { icon: History, label: "Scan History", href: "/history" },
+    ],
+  },
+  {
+    title: "Tools",
+    items: [
+      { icon: Code2, label: "NSE Scripts", href: "/tools/nse" },
+      { icon: BookOpen, label: "Nmap Reference", href: "/tools/reference" },
+      { icon: Network, label: "Network Topology", href: "/tools/topology" },
+      { icon: Server, label: "Host Detail", href: "/host/detail" },
+      { icon: Lock, label: "CIDR Scope", href: "/tools/cidr" },
+    ],
+  },
+  {
+    title: "System",
+    items: [
+      { icon: Shield, label: "Audit Log", href: "/audit" },
+      { icon: Settings, label: "Settings", href: "/settings" },
+    ],
+  },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -109,47 +142,65 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </button>
         </div>
 
-        {/* Nav items */}
-        <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
-            const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
-            const Icon = item.icon;
+        {/* Nav groups */}
+        <nav className="flex-1 py-3 px-2 overflow-y-auto space-y-4">
+          {navGroups.map((group) => (
+            <div key={group.title}>
+              {/* Group title */}
+              {!collapsed && (
+                <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/60">
+                  {group.title}
+                </p>
+              )}
+              {collapsed && (
+                <div className="mx-auto w-6 border-t border-border/30 mb-2 mt-1" />
+              )}
 
-            const linkContent = (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`
-                  flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
-                  transition-all duration-200
-                  ${isActive
-                    ? "bg-purple-600/15 text-purple-400 shadow-[inset_0_0_0_1px_rgba(139,92,246,0.2)]"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+              <div className="space-y-0.5">
+                {group.items.map((item) => {
+                  const isActive =
+                    location === item.href ||
+                    (item.href !== "/" && location.startsWith(item.href));
+                  const Icon = item.icon;
+
+                  const linkContent = (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`
+                        flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium
+                        transition-all duration-200
+                        ${isActive
+                          ? "bg-purple-600/15 text-purple-400 shadow-[inset_0_0_0_1px_rgba(139,92,246,0.2)]"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                        }
+                      `}
+                    >
+                      <Icon className={`w-[17px] h-[17px] shrink-0 ${isActive ? "text-purple-400" : ""}`} />
+                      {!collapsed && <span className="truncate">{item.label}</span>}
+                      {!collapsed && item.badge && (
+                        <span className="ml-auto text-[10px] bg-purple-600/30 text-purple-300 px-1.5 py-0.5 rounded-full">
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  );
+
+                  if (collapsed) {
+                    return (
+                      <Tooltip key={item.href} delayDuration={0}>
+                        <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+                        <TooltipContent side="right" className="bg-popover text-popover-foreground">
+                          {item.label}
+                        </TooltipContent>
+                      </Tooltip>
+                    );
                   }
-                `}
-              >
-                <Icon className={`w-[18px] h-[18px] shrink-0 ${isActive ? "text-purple-400" : ""}`} />
-                {!collapsed && <span className="truncate">{item.label}</span>}
-                {!collapsed && item.badge && (
-                  <span className="ml-auto text-[10px] bg-purple-600/30 text-purple-300 px-1.5 py-0.5 rounded-full">
-                    {item.badge}
-                  </span>
-                )}
-              </Link>
-            );
-
-            if (collapsed) {
-              return (
-                <Tooltip key={item.href} delayDuration={0}>
-                  <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
-                  <TooltipContent side="right" className="bg-popover text-popover-foreground">
-                    {item.label}
-                  </TooltipContent>
-                </Tooltip>
-              );
-            }
-            return linkContent;
-          })}
+                  return <div key={item.href}>{linkContent}</div>;
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {/* Collapse toggle */}
