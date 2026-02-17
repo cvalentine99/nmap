@@ -21,6 +21,12 @@ import {
   lookupCveById, searchCveByKeyword, searchCveByCpe,
   lookupCveForService, getCachedCves, buildCpeFromService,
 } from "./cve-service";
+import {
+  getAlertStats, getRecentAlerts, updateAlertStatus, bulkDismissAlerts,
+} from "./alert-service";
+import { alertRules, alerts } from "../drizzle/schema";
+import { eq, desc, and, sql } from "drizzle-orm";
+import { getDb } from "./db";
 
 export const appRouter = router({
   system: systemRouter,
@@ -381,6 +387,124 @@ export const appRouter = router({
       const version = await getNmapVersion();
       return { installed: !!version, version };
     }),
+  }),
+
+  // ─── Alerts ────────────────────────────────────────────────────
+
+  alert: router({
+    /** Get alert statistics for dashboard */
+    stats: protectedProcedure.query(async () => {
+      return getAlertStats();
+    }),
+
+    /** List recent alerts with optional filters */
+    list: protectedProcedure
+      .input(z.object({
+        limit: z.number().min(1).max(200).optional().default(50),
+        severity: z.enum(["critical", "high", "medium", "low", "info"]).optional(),
+        status: z.enum(["new", "acknowledged", "investigating", "resolved", "dismissed"]).optional(),
+      }))
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return [];
+        const conditions = [];
+        if (input.severity) conditions.push(eq(alerts.severity, input.severity));
+        if (input.status) conditions.push(eq(alerts.status, input.status));
+        if (conditions.length > 0) {
+          return db.select().from(alerts).where(and(...conditions)).orderBy(desc(alerts.createdAt)).limit(input.limit);
+        }
+        return db.select().from(alerts).orderBy(desc(alerts.createdAt)).limit(input.limit);
+      }),
+
+    /** Update alert status */
+    updateStatus: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        status: z.enum(["acknowledged", "investigating", "resolved", "dismissed"]),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await updateAlertStatus(input.id, input.status, ctx.user.id, input.notes);
+        return { success: true };
+      }),
+
+    /** Bulk dismiss alerts */
+    bulkDismiss: protectedProcedure
+      .input(z.object({
+        ids: z.array(z.number()).min(1),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const count = await bulkDismissAlerts(input.ids, ctx.user.id);
+        return { dismissed: count };
+      }),
+  }),
+
+  // ─── Alert Rules ──────────────────────────────────────────────
+
+  alertRule: router({
+    /** List all alert rules */
+    list: protectedProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select().from(alertRules).orderBy(desc(alertRules.createdAt));
+    }),
+
+    /** Create a new alert rule */
+    create: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        description: z.string().optional(),
+        severityThreshold: z.enum(["critical", "high", "medium", "low"]),
+        cvssThreshold: z.number().min(0).max(10).optional(),
+        watchedServices: z.array(z.string()).optional(),
+        watchedTargets: z.array(z.string()).optional(),
+        watchedCveIds: z.array(z.string()).optional(),
+        alertOnKev: z.boolean().optional().default(true),
+        channels: z.array(z.string()).optional(),
+        cooldownMinutes: z.number().min(1).optional().default(60),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+        const result = await db.insert(alertRules).values({
+          name: input.name,
+          description: input.description || null,
+          severityThreshold: input.severityThreshold,
+          cvssThreshold: input.cvssThreshold || null,
+          watchedServices: input.watchedServices ? JSON.parse(JSON.stringify(input.watchedServices)) : null,
+          watchedTargets: input.watchedTargets ? JSON.parse(JSON.stringify(input.watchedTargets)) : null,
+          watchedCveIds: input.watchedCveIds ? JSON.parse(JSON.stringify(input.watchedCveIds)) : null,
+          alertOnKev: input.alertOnKev,
+          channels: input.channels ? JSON.parse(JSON.stringify(input.channels)) : JSON.parse(JSON.stringify(["in_app", "push"])),
+          cooldownMinutes: input.cooldownMinutes,
+          createdBy: ctx.user.id,
+          enabled: true,
+        });
+        return { id: Number(result[0].insertId) };
+      }),
+
+    /** Toggle alert rule enabled/disabled */
+    toggle: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        enabled: z.boolean(),
+      }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+        await db.update(alertRules).set({ enabled: input.enabled }).where(eq(alertRules.id, input.id));
+        return { success: true };
+      }),
+
+    /** Delete an alert rule */
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+        await db.delete(alertRules).where(eq(alertRules.id, input.id));
+        return { success: true };
+      }),
   }),
 
   // ─── Scan Templates ───────────────────────────────────────────

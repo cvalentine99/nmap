@@ -6,6 +6,8 @@
  */
 import { useState, useEffect, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import {
   LayoutDashboard,
   Radar,
@@ -28,6 +30,7 @@ import {
   Network,
   Lock,
   Bug,
+  BellRing,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -70,6 +73,7 @@ const navGroups: NavGroup[] = [
   {
     title: "System",
     items: [
+      { icon: BellRing, label: "Alerts", href: "/alerts" },
       { icon: Shield, label: "Audit Log", href: "/audit" },
       { icon: Settings, label: "Settings", href: "/settings" },
     ],
@@ -80,6 +84,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
+  const { data: alertStats } = trpc.alert.stats.useQuery(undefined, { enabled: isAuthenticated });
+  const alertCount = alertStats?.newCount || 0;
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -244,12 +251,18 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-2">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground relative">
-                  <Bell className="w-[18px] h-[18px]" />
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-                </Button>
+                <Link href="/alerts">
+                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground relative">
+                    <Bell className="w-[18px] h-[18px]" />
+                    {alertCount > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 rounded-full text-[10px] font-bold text-white px-1">
+                        {alertCount > 99 ? "99+" : alertCount}
+                      </span>
+                    )}
+                  </Button>
+                </Link>
               </TooltipTrigger>
-              <TooltipContent>Notifications</TooltipContent>
+              <TooltipContent>Alerts {alertCount > 0 ? `(${alertCount} new)` : ""}</TooltipContent>
             </Tooltip>
 
             <Tooltip>

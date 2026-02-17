@@ -9,6 +9,7 @@ import {
   createVulnerabilities, createAuditEntry, getScanById,
 } from "./db";
 import type { InsertHost, InsertPort, InsertVulnerability } from "../drizzle/schema";
+import { evaluateScanAlerts } from "./alert-service";
 
 // Active scan processes tracked by scan ID
 const activeScans = new Map<number, ChildProcess>();
@@ -384,6 +385,16 @@ export async function executeScan(scanId: number): Promise<void> {
           entityType: "scan",
           entityId: scanId,
         });
+
+        // Evaluate alert rules against scan results and dispatch notifications
+        try {
+          const alertCount = await evaluateScanAlerts(scanId);
+          if (alertCount > 0) {
+            console.log(`[NmapService] Generated ${alertCount} alerts for scan ${scanId}`);
+          }
+        } catch (alertErr) {
+          console.warn(`[NmapService] Alert evaluation failed for scan ${scanId}:`, alertErr);
+        }
 
         resolve();
       } catch (parseError) {

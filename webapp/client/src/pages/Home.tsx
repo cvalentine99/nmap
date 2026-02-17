@@ -143,6 +143,7 @@ export default function Home() {
   const { data: stats } = trpc.stats.dashboard.useQuery(undefined, { enabled: isAuthenticated });
   const { data: nmapInfo } = trpc.info.nmapVersion.useQuery();
   const { data: cudaStatus } = trpc.cuda.status.useQuery(undefined, { enabled: isAuthenticated });
+  const { data: alertStats } = trpc.alert.stats.useQuery(undefined, { enabled: isAuthenticated });
 
   // Use real stats when available, fall back to mock data
   const liveStatCards = useMemo(() => {
@@ -152,9 +153,9 @@ export default function Home() {
       { label: "Hosts Found", value: stats.totalHosts, sub: "discovered", icon: Globe, color: "text-cyan-400", bgColor: "bg-cyan-500/10" },
       { label: "Open Ports", value: stats.totalOpenPorts, sub: "across all hosts", icon: Layers, color: "text-green-400", bgColor: "bg-green-500/10" },
       { label: "Vulnerabilities", value: stats.totalVulns, sub: `${stats.criticalVulns} critical`, icon: AlertTriangle, color: "text-orange-400", bgColor: "bg-orange-500/10" },
-      { label: "Active Alerts", value: stats.activeScans, sub: cudaStatus?.available ? "CUDA ready" : "", icon: Shield, color: "text-red-400", bgColor: "bg-red-500/10" },
+      { label: "Active Alerts", value: alertStats?.newCount || 0, sub: alertStats?.criticalCount ? `${alertStats.criticalCount} critical` : "no new alerts", icon: Shield, color: "text-red-400", bgColor: "bg-red-500/10" },
     ];
-  }, [stats, cudaStatus]);
+  }, [stats, cudaStatus, alertStats]);
 
   return (
     <div className="space-y-6">

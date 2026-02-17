@@ -407,3 +407,106 @@ export const cveServiceMap = mysqlTable("cve_service_map", {
 
 export type CveServiceMapEntry = typeof cveServiceMap.$inferSelect;
 export type InsertCveServiceMapEntry = typeof cveServiceMap.$inferInsert;
+
+/**
+ * Alert Rules — user-defined rules for automated CVE alerting.
+ */
+export const alertRules = mysqlTable("alert_rules", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Rule name (e.g., "Critical CVE Alert") */
+  name: varchar("name", { length: 256 }).notNull(),
+  /** Rule description */
+  description: text("description"),
+  /** Whether this rule is active */
+  enabled: boolean("enabled").default(true).notNull(),
+  /** Minimum severity to trigger: critical, high, medium, low */
+  severityThreshold: mysqlEnum("severityThreshold", [
+    "critical",
+    "high",
+    "medium",
+    "low",
+  ]).default("high").notNull(),
+  /** Minimum CVSS score to trigger (0.0 - 10.0), null means use severity only */
+  cvssThreshold: float("cvssThreshold"),
+  /** Specific services to watch (JSON array), null means all services */
+  watchedServices: json("watchedServices"),
+  /** Specific CIDR ranges to watch (JSON array), null means all targets */
+  watchedTargets: json("watchedTargets"),
+  /** Specific CVE IDs to always alert on (JSON array) */
+  watchedCveIds: json("watchedCveIds"),
+  /** Alert on CISA KEV entries regardless of severity */
+  alertOnKev: boolean("alertOnKev").default(true).notNull(),
+  /** Notification channels: in_app, push, email (JSON array) */
+  channels: json("channels"),
+  /** Cooldown period in minutes to avoid duplicate alerts */
+  cooldownMinutes: int("cooldownMinutes").default(60),
+  /** User who created the rule */
+  createdBy: int("createdBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AlertRule = typeof alertRules.$inferSelect;
+export type InsertAlertRule = typeof alertRules.$inferInsert;
+
+/**
+ * Alerts — triggered alert instances from scan results.
+ */
+export const alerts = mysqlTable("alerts", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Alert rule that triggered this */
+  ruleId: int("ruleId"),
+  /** Scan that triggered this alert */
+  scanId: int("scanId"),
+  /** Host where the vulnerability was found */
+  hostId: int("hostId"),
+  /** Port where the vulnerability was found */
+  portId: int("portId"),
+  /** Severity level of this alert */
+  severity: mysqlEnum("severity", [
+    "critical",
+    "high",
+    "medium",
+    "low",
+    "info",
+  ]).default("high").notNull(),
+  /** Alert title */
+  title: varchar("title", { length: 512 }).notNull(),
+  /** Alert message with details */
+  message: text("message"),
+  /** CVE ID if applicable */
+  cveId: varchar("cveId", { length: 64 }),
+  /** CVSS score */
+  cvssScore: float("cvssScore"),
+  /** Affected service name */
+  service: varchar("service", { length: 128 }),
+  /** Affected service version */
+  serviceVersion: varchar("serviceVersion", { length: 128 }),
+  /** Target IP address */
+  targetIp: varchar("targetIp", { length: 45 }),
+  /** Port number */
+  portNumber: int("portNumber"),
+  /** Alert status */
+  status: mysqlEnum("status", [
+    "new",
+    "acknowledged",
+    "investigating",
+    "resolved",
+    "dismissed",
+  ]).default("new").notNull(),
+  /** Whether owner notification was sent */
+  notificationSent: boolean("notificationSent").default(false).notNull(),
+  /** Notification sent timestamp */
+  notifiedAt: timestamp("notifiedAt"),
+  /** User who acknowledged/resolved */
+  resolvedBy: int("resolvedBy"),
+  /** Resolution notes */
+  resolutionNotes: text("resolutionNotes"),
+  /** Resolved timestamp */
+  resolvedAt: timestamp("resolvedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Alert = typeof alerts.$inferSelect;
+export type InsertAlert = typeof alerts.$inferInsert;

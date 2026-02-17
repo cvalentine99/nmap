@@ -56,4 +56,18 @@
 - [x] Add CVE links to HostDetail vulnerability cards and port table
 - [x] Add navigation entry for CVE Lookup in sidebar + Home quick actions
 - [x] Write vitest tests for CVE service — 30 tests passing (54 total)
-- [ ] Checkpoint and push to GitHub
+- [x] Checkpoint and push to GitHub (version 26a935c4)
+
+## Automated CVE Alerting
+- [x] Add alerts table to database schema (alert rules + alert history)
+- [x] Add notification_preferences table for alert thresholds and channels
+- [x] Run database migrations (0003_short_metal_master.sql applied)
+- [x] Build alert-service.ts with CVE severity matching and notification dispatch
+- [x] Hook alert service into scan completion pipeline (nmap-service.ts)
+- [x] Add alert tRPC routes (list, create rule, update rule, dismiss, stats)
+- [x] Build Alerts page with notification center, rule management, and history
+- [x] Add alert badge/indicator to sidebar and top nav
+- [x] Wire alert counts into Home dashboard stat cards
+- [x] Use built-in notifyOwner for push notifications on CRITICAL/HIGH CVEs
+- [x] Write vitest tests for alert service — 32 tests passing (86 total)
+- [ ] Checkpoint and push to GitHub (pending)
