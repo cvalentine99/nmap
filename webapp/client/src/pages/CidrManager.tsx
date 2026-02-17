@@ -4,6 +4,7 @@
  * Allowlist/denylist manager for scan scope enforcement with CIDR validation
  */
 import { useState, useMemo } from "react";
+import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -85,6 +86,28 @@ function checkConflicts(newCidr: string, entries: CidrEntry[]): CidrEntry[] {
 
 export default function CidrManager() {
   const [entries, setEntries] = useState<CidrEntry[]>(initialEntries);
+  const utils = trpc.useUtils();
+  const { data: cidrRules } = trpc.cidr.list.useQuery();
+  const createRule = trpc.cidr.create.useMutation({ onSuccess: () => utils.cidr.list.invalidate() });
+  const updateRule = trpc.cidr.update.useMutation({ onSuccess: () => utils.cidr.list.invalidate() });
+  const deleteRule = trpc.cidr.delete.useMutation({ onSuccess: () => utils.cidr.list.invalidate() });
+
+  // Merge real data with local state
+  const effectiveEntries = useMemo(() => {
+    if (cidrRules && cidrRules.length > 0) {
+      return cidrRules.map((r: any) => ({
+        id: String(r.id),
+        cidr: r.cidr,
+        label: r.label || "",
+        type: r.type as "allow" | "deny",
+        hosts: calculateHosts(r.cidr),
+        addedBy: "user",
+        addedAt: new Date(r.createdAt).toLocaleDateString(),
+        enabled: r.enabled,
+      }));
+    }
+    return entries;
+  }, [cidrRules, entries]);
   const [newCidr, setNewCidr] = useState("");
   const [newLabel, setNewLabel] = useState("");
   const [newType, setNewType] = useState<"allow" | "deny">("allow");
@@ -93,7 +116,7 @@ export default function CidrManager() {
   const [validationResult, setValidationResult] = useState<{ valid: boolean; error?: string } | null>(null);
 
   const filteredEntries = useMemo(() => {
-    return entries.filter((e) => {
+    return effectiveEntries.filter((e) => {
       const matchesSearch =
         !searchQuery ||
         e.cidr.includes(searchQuery) ||
@@ -101,11 +124,11 @@ export default function CidrManager() {
       const matchesType = filterType === "all" || e.type === filterType;
       return matchesSearch && matchesType;
     });
-  }, [entries, searchQuery, filterType]);
+  }, [effectiveEntries, searchQuery, filterType]);
 
-  const allowCount = entries.filter((e) => e.type === "allow").length;
-  const denyCount = entries.filter((e) => e.type === "deny").length;
-  const totalHosts = entries.filter((e) => e.type === "allow" && e.enabled).reduce((s, e) => s + e.hosts, 0);
+  const allowCount = effectiveEntries.filter((e) => e.type === "allow").length;
+  const denyCount = effectiveEntries.filter((e) => e.type === "deny").length;
+  const totalHosts = effectiveEntries.filter((e) => e.type === "allow" && e.enabled).reduce((s, e) => s + e.hosts, 0);
 
   const handleCidrChange = (value: string) => {
     setNewCidr(value);
@@ -140,6 +163,8 @@ export default function CidrManager() {
     };
 
     setEntries((prev) => [...prev, newEntry]);
+    // Persist to database
+    createRule.mutate({ cidr: newCidr, label: newLabel || "Unnamed Range", type: newType, enabled: true });
     setNewCidr("");
     setNewLabel("");
     setValidationResult(null);
@@ -148,13 +173,18 @@ export default function CidrManager() {
 
   const removeEntry = (id: string) => {
     setEntries((prev) => prev.filter((e) => e.id !== id));
+    const numId = parseInt(id);
+    if (!isNaN(numId)) deleteRule.mutate({ id: numId });
     toast.success("Entry removed");
   };
 
   const toggleEntry = (id: string) => {
+    const entry = effectiveEntries.find(e => e.id === id);
     setEntries((prev) =>
       prev.map((e) => (e.id === id ? { ...e, enabled: !e.enabled } : e))
     );
+    const numId = parseInt(id);
+    if (!isNaN(numId) && entry) updateRule.mutate({ id: numId, enabled: !entry.enabled });
   };
 
   return (

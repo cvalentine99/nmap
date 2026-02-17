@@ -3,7 +3,9 @@
  * Spectra Command Dark Theme
  * Sections: Hero banner, Stat cards, Quick actions, Charts, Recent threats, Active investigations
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -137,6 +139,23 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function Home() {
+  const { user, isAuthenticated } = useAuth();
+  const { data: stats } = trpc.stats.dashboard.useQuery(undefined, { enabled: isAuthenticated });
+  const { data: nmapInfo } = trpc.info.nmapVersion.useQuery();
+  const { data: cudaStatus } = trpc.cuda.status.useQuery(undefined, { enabled: isAuthenticated });
+
+  // Use real stats when available, fall back to mock data
+  const liveStatCards = useMemo(() => {
+    if (!stats) return statCards;
+    return [
+      { label: "Scans (7d)", value: stats.totalScans, sub: `${stats.activeScans} active`, icon: Crosshair, color: "text-purple-400", bgColor: "bg-purple-500/10" },
+      { label: "Hosts Found", value: stats.totalHosts, sub: "discovered", icon: Globe, color: "text-cyan-400", bgColor: "bg-cyan-500/10" },
+      { label: "Open Ports", value: stats.totalOpenPorts, sub: "across all hosts", icon: Layers, color: "text-green-400", bgColor: "bg-green-500/10" },
+      { label: "Vulnerabilities", value: stats.totalVulns, sub: `${stats.criticalVulns} critical`, icon: AlertTriangle, color: "text-orange-400", bgColor: "bg-orange-500/10" },
+      { label: "Active Alerts", value: stats.activeScans, sub: cudaStatus?.available ? "CUDA ready" : "", icon: Shield, color: "text-red-400", bgColor: "bg-red-500/10" },
+    ];
+  }, [stats, cudaStatus]);
+
   return (
     <div className="space-y-6">
       {/* Hero Banner */}
@@ -169,12 +188,37 @@ export default function Home() {
             Enterprise-grade network scanning, host discovery, and vulnerability assessment powered by Nmap.
             Safe by construction, auditable, and scalable.
           </p>
+          <div className="flex items-center gap-3 mt-4">
+            {nmapInfo?.installed && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-green-500/10 border border-green-500/30 text-[11px] font-medium text-green-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                Nmap {nmapInfo.version}
+              </span>
+            )}
+            {!nmapInfo?.installed && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-red-500/10 border border-red-500/30 text-[11px] font-medium text-red-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                Nmap not installed
+              </span>
+            )}
+            {cudaStatus?.available ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-500/10 border border-purple-500/30 text-[11px] font-medium text-purple-400">
+                <Cpu className="w-3 h-3" />
+                CUDA {cudaStatus.devices.length} GPU{cudaStatus.devices.length !== 1 ? 's' : ''}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/50 border border-border/50 text-[11px] font-medium text-muted-foreground">
+                <Cpu className="w-3 h-3" />
+                CUDA N/A
+              </span>
+            )}
+          </div>
         </div>
       </motion.div>
 
       {/* Stat Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 lg:gap-4">
-        {statCards.map((stat, i) => {
+        {liveStatCards.map((stat, i) => {
           const Icon = stat.icon;
           return (
             <motion.div

@@ -17,8 +17,8 @@ import HostDetail from "./pages/HostDetail";
 import NetworkTopology from "./pages/NetworkTopology";
 import CidrManager from "./pages/CidrManager";
 import DashboardLayout from "./components/DashboardLayout";
-
 function Router() {
+  // make sure to consider if you need authentication for certain routes
   return (
     <DashboardLayout>
       <Switch>

@@ -4,6 +4,8 @@
  * Guard-railed scan form with preset profiles and advanced options
  */
 import { useState } from "react";
+import { useLocation } from "wouter";
+import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -100,6 +102,7 @@ const timingOptions = [
 ];
 
 export default function ScanCreate() {
+  const [, setLocation] = useLocation();
   const [selectedProfile, setSelectedProfile] = useState("quick");
   const [target, setTarget] = useState("");
   const [portRange, setPortRange] = useState("");
@@ -108,6 +111,21 @@ export default function ScanCreate() {
   const [serviceVersion, setServiceVersion] = useState(true);
   const [scriptScan, setScriptScan] = useState(false);
   const [udpScan, setUdpScan] = useState(false);
+  const [cudaEnabled, setCudaEnabled] = useState(false);
+
+  const createScan = trpc.scan.create.useMutation({
+    onSuccess: (data) => {
+      toast.success("Scan queued", {
+        description: `Scan #${data.id} targeting ${target} is now running`,
+      });
+      setLocation("/scan/live");
+    },
+    onError: (err) => {
+      toast.error("Scan failed", { description: err.message });
+    },
+  });
+
+  const { data: cudaStatus } = trpc.cuda.status.useQuery();
 
   const selectedProfileData = scanProfiles.find((p) => p.id === selectedProfile);
 
@@ -129,8 +147,21 @@ export default function ScanCreate() {
       toast.error("Target required", { description: "Enter an IP address, hostname, or CIDR range" });
       return;
     }
-    toast.success("Scan submitted", {
-      description: `Scanning ${target} with ${selectedProfileData?.name} profile`,
+    // Build custom flags from advanced options
+    let customFlags = selectedProfileData?.flags || "";
+    if (portRange) customFlags += ` -p ${portRange}`;
+    if (osDetection && !customFlags.includes("-O")) customFlags += " -O";
+    if (serviceVersion && !customFlags.includes("-sV")) customFlags += " -sV";
+    if (scriptScan) customFlags += " --script=default";
+    if (udpScan) customFlags += " -sU";
+    customFlags += ` -${timing}`;
+
+    createScan.mutate({
+      target: target.trim(),
+      profile: selectedProfile,
+      flags: customFlags.trim(),
+      cudaEnabled,
+      autoStart: true,
     });
   };
 
@@ -299,6 +330,30 @@ export default function ScanCreate() {
                     <Switch checked={udpScan} onCheckedChange={setUdpScan} />
                   </div>
                 </div>
+
+                <Separator className="bg-border/30" />
+
+                {/* CUDA GPU Acceleration */}
+                <div className="flex items-center justify-between p-3 rounded-lg border border-purple-500/20 bg-purple-500/5">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-purple-500/10">
+                      <Cpu className="w-4 h-4 text-purple-400" />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-medium">CUDA GPU Acceleration</Label>
+                      <p className="text-[11px] text-muted-foreground">
+                        {cudaStatus?.available
+                          ? `${cudaStatus.devices.length} GPU(s) available — accelerate packet processing`
+                          : "No CUDA-capable GPU detected"}
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={cudaEnabled}
+                    onCheckedChange={setCudaEnabled}
+                    disabled={!cudaStatus?.available}
+                  />
+                </div>
               </CardContent>
             </Card>
           </motion.div>
@@ -324,10 +379,14 @@ export default function ScanCreate() {
                 <div className="flex items-center gap-3 mt-4">
                   <Button
                     onClick={handleSubmit}
+                    disabled={createScan.isPending}
                     className="bg-purple-600 hover:bg-purple-700 text-white gap-2"
                   >
-                    <Play className="w-4 h-4" />
-                    Launch Scan
+                    {createScan.isPending ? (
+                      <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Submitting...</>
+                    ) : (
+                      <><Play className="w-4 h-4" /> Launch Scan</>
+                    )}
                   </Button>
                   <p className="text-[11px] text-muted-foreground">
                     Scan will be validated against allowlist before execution

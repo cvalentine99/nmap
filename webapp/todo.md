@@ -1,18 +1,46 @@
-# Valentine RF NMAP Command - Expanded Capabilities
+# Full-Stack Upgrade TODO
 
-## New Pages to Create
-- [ ] NSE Script Browser — Browse/search all Nmap Scripting Engine categories and scripts with descriptions, usage examples, and risk levels
-- [ ] Nmap Reference — Complete Nmap flag/option cheatsheet organized by category with copy-to-clipboard
-- [ ] Live Scan Progress — Real-time scan progress simulator with terminal output, host discovery feed, and port discovery animation
-- [ ] Host Detail — Deep drilldown page for a single host showing ports, services, OS, vulnerabilities, scripts output, and timeline
-- [ ] Network Topology — Interactive network graph visualization showing discovered hosts, subnets, and connections
-- [ ] CIDR Scope Manager — Allowlist/denylist manager for scan scope enforcement with CIDR validation and conflict detection
+## Phase 1: Upgrade to web-db-user
+- [x] Run webdev_add_feature to add backend, database, user management
+- [x] Review generated scaffolding and resolve merge conflicts
 
-## Navigation & Routing Updates
-- [ ] Add new nav items to DashboardLayout sidebar (grouped under "Tools" section)
-- [ ] Add routes to App.tsx for all new pages
-- [ ] Update Home.tsx quick actions to link to new pages
+## Phase 2: Database Schema
+- [x] Create scans table
+- [x] Create hosts table
+- [x] Create ports table
+- [x] Create vulnerabilities table
+- [x] Create audit_log table
+- [x] Create cidr_rules table
+- [x] Run migrations (9 tables, 0001_busy_odin.sql applied)
 
-## Polish
-- [ ] Ensure all pages match dark cyberpunk Spectra Command theme
-- [ ] Test responsive layout on all new pages
+## Phase 3: Backend API Routes
+- [x] POST /api/scans - Create and queue a new scan
+- [x] GET /api/scans - List all scans with pagination
+- [x] GET /api/scans/:id - Get scan details with hosts/ports
+- [x] DELETE /api/scans/:id - Delete a scan
+- [x] GET /api/stats - Dashboard statistics
+- [x] GET /api/audit - Audit log entries
+- [x] CRUD /api/cidr - CIDR scope rules
+- [x] Nmap execution service (spawn nmap, parse XML)
+
+## Phase 4: Frontend Integration
+- [x] Wire Home.tsx to tRPC stats endpoint
+- [x] Wire ScanCreate.tsx to tRPC scan.create mutation
+- [x] Wire ScanHistory.tsx to tRPC scan.list query
+- [x] Wire ScanResults.tsx to tRPC scan.getById query
+- [x] Wire AuditLog.tsx to tRPC audit.list query
+- [x] Wire CidrManager.tsx to tRPC cidr CRUD
+- [x] Wire Settings.tsx to tRPC cuda.status and info.nmapVersion
+
+## Phase 5: Test & Deliver
+- [x] Write vitest tests for nmap-service (buildNmapCommand, parseNmapXml) — 24 tests passing
+- [x] Write vitest tests for tRPC router procedures — 24 tests passing
+- [ ] Checkpoint and push to GitHub
+
+## CUDA GPU Acceleration
+- [x] Add CUDA toggle to ScanCreate form
+- [x] Add CUDA/GPU tab to Settings page
+- [x] Display CUDA status badge on Home dashboard
+- [x] Display Nmap version badge on Home dashboard
+- [x] Track GPU availability and CUDA status in scan configuration
+- [x] Support GPU-accelerated packet processing options

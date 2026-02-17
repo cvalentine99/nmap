@@ -2,8 +2,9 @@
  * ScanHistory — Scan History & Filtering
  * Spectra Command Dark Theme
  */
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "wouter";
+import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -130,8 +131,27 @@ function StatusBadge({ status }: { status: string }) {
 export default function ScanHistory() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const { data: scanData, isLoading } = trpc.scan.list.useQuery({ limit: 100, offset: 0 });
 
-  const filtered = mockHistory.filter((scan) => {
+  // Merge real data with mock fallback
+  const allScans = useMemo(() => {
+    if (scanData?.scans && scanData.scans.length > 0) {
+      return scanData.scans.map(s => ({
+        id: `scan-${s.id}`,
+        target: s.target,
+        profile: s.profile || "Custom",
+        status: s.status,
+        hostsUp: s.hostsUp || 0,
+        openPorts: s.openPorts || 0,
+        startTime: s.startedAt ? new Date(s.startedAt).toLocaleString() : new Date(s.createdAt).toLocaleString(),
+        duration: s.durationMs ? `${Math.floor(s.durationMs / 60000)}m ${Math.floor((s.durationMs % 60000) / 1000)}s` : "—",
+        initiatedBy: "user",
+      }));
+    }
+    return mockHistory;
+  }, [scanData]);
+
+  const filtered = allScans.filter((scan) => {
     const matchesSearch = scan.target.toLowerCase().includes(searchQuery.toLowerCase()) ||
       scan.profile.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || scan.status === statusFilter;

@@ -3,7 +3,9 @@
  * Spectra Command Dark Theme
  * Shows scan results with hosts, ports, services, and script output
  */
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useRoute } from "wouter";
+import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -109,8 +111,47 @@ function RiskBadge({ risk }: { risk: string }) {
 }
 
 export default function ScanResults() {
+  const [, params] = useRoute("/scan/results/:id");
+  const scanId = params?.id ? parseInt(params.id) : undefined;
+  const { data: scanDetail } = trpc.scan.getById.useQuery(
+    { id: scanId! },
+    { enabled: !!scanId }
+  );
+
+  // Use real data when available, otherwise mock
+  const displayScan = useMemo(() => {
+    if (scanDetail) {
+      return {
+        ...mockScan,
+        id: `scan-${scanDetail.id}`,
+        target: scanDetail.target,
+        profile: scanDetail.profile || "Custom",
+        status: scanDetail.status === "completed" ? "Completed" : scanDetail.status,
+        command: scanDetail.flags ? `nmap ${scanDetail.flags} ${scanDetail.target}` : mockScan.command,
+        hostsUp: scanDetail.hosts?.length || mockScan.hostsUp,
+        totalPorts: scanDetail.ports?.length || mockScan.totalPorts,
+      };
+    }
+    return mockScan;
+  }, [scanDetail]);
+
+  const displayHosts = useMemo(() => {
+    if (scanDetail?.hosts && scanDetail.hosts.length > 0) {
+      return scanDetail.hosts.map((h: any) => ({
+        ip: h.ip,
+        hostname: h.hostname || "unknown",
+        os: h.osName || "Unknown",
+        status: h.status || "up",
+        openPorts: h.openPorts || 0,
+        risk: h.openPorts > 10 ? "high" : h.openPorts > 5 ? "medium" : "low",
+        ports: [],
+      }));
+    }
+    return mockHosts;
+  }, [scanDetail]);
+
   const [selectedHost, setSelectedHost] = useState<string | null>(mockHosts[0].ip);
-  const activeHost = mockHosts.find((h) => h.ip === selectedHost);
+  const activeHost = displayHosts.find((h: any) => h.ip === selectedHost) || displayHosts[0];
 
   return (
     <div className="space-y-6">

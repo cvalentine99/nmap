@@ -2,7 +2,8 @@
  * AuditLog — Security Audit Trail
  * Spectra Command Dark Theme
  */
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,8 +76,24 @@ function SeverityDot({ severity }: { severity: string }) {
 
 export default function AuditLog() {
   const [searchQuery, setSearchQuery] = useState("");
+  const { data: auditData } = trpc.audit.list.useQuery({ limit: 200, offset: 0 });
 
-  const filtered = mockAuditLog.filter((entry) =>
+  const allEntries = useMemo(() => {
+    if (auditData && auditData.length > 0) {
+      return auditData.map((e: any) => ({
+        id: `a-${e.id}`,
+        timestamp: new Date(e.createdAt).toLocaleString(),
+        action: (e.action || "scan_initiated") as AuditAction,
+        user: e.userName || "system",
+        details: e.details || "",
+        ip: "—",
+        severity: (e.action?.includes("alert") ? "critical" : e.action?.includes("settings") ? "warning" : "info") as "info" | "warning" | "critical",
+      }));
+    }
+    return mockAuditLog;
+  }, [auditData]);
+
+  const filtered = allEntries.filter((entry) =>
     entry.details.toLowerCase().includes(searchQuery.toLowerCase()) ||
     entry.user.toLowerCase().includes(searchQuery.toLowerCase()) ||
     entry.action.toLowerCase().includes(searchQuery.toLowerCase())
