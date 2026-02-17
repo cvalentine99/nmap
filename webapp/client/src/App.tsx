@@ -16,6 +16,7 @@ import LiveScan from "./pages/LiveScan";
 import HostDetail from "./pages/HostDetail";
 import NetworkTopology from "./pages/NetworkTopology";
 import CidrManager from "./pages/CidrManager";
+import CveLookup from "./pages/CveLookup";
 import DashboardLayout from "./components/DashboardLayout";
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -34,6 +35,7 @@ function Router() {
         <Route path="/tools/reference" component={NmapReference} />
         <Route path="/tools/topology" component={NetworkTopology} />
         <Route path="/tools/cidr" component={CidrManager} />
+        <Route path="/tools/cve" component={CveLookup} />
         <Route path="/audit" component={AuditLog} />
         <Route path="/settings" component={Settings} />
         <Route path="/404" component={NotFound} />

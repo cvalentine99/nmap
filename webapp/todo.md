@@ -35,7 +35,7 @@
 ## Phase 5: Test & Deliver
 - [x] Write vitest tests for nmap-service (buildNmapCommand, parseNmapXml) — 24 tests passing
 - [x] Write vitest tests for tRPC router procedures — 24 tests passing
-- [ ] Checkpoint and push to GitHub
+- [x] Checkpoint and push to GitHub (version a970e550)
 
 ## CUDA GPU Acceleration
 - [x] Add CUDA toggle to ScanCreate form
@@ -44,3 +44,16 @@
 - [x] Display Nmap version badge on Home dashboard
 - [x] Track GPU availability and CUDA status in scan configuration
 - [x] Support GPU-accelerated packet processing options
+
+## CVE Lookup Integration
+- [x] Research public CVE APIs (NVD NIST API 2.0)
+- [x] Build backend CVE service with caching and rate limiting
+- [x] Create tRPC routes for CVE search, detail, and service-based lookup
+- [x] Add CVE database table for caching results
+- [x] Build CVE Lookup page with search by keyword, CVE ID, CPE, service+version
+- [x] Build CVE Detail view with severity, CVSS score, references, affected products
+- [x] Add CVE column/badges to ScanResults port table
+- [x] Add CVE links to HostDetail vulnerability cards and port table
+- [x] Add navigation entry for CVE Lookup in sidebar + Home quick actions
+- [x] Write vitest tests for CVE service — 30 tests passing (54 total)
+- [ ] Checkpoint and push to GitHub

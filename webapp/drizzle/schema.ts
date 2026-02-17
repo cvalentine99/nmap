@@ -336,3 +336,74 @@ export const scanTemplates = mysqlTable("scan_templates", {
 
 export type ScanTemplate = typeof scanTemplates.$inferSelect;
 export type InsertScanTemplate = typeof scanTemplates.$inferInsert;
+
+/**
+ * CVE Cache — cached CVE lookup results from NVD API to avoid rate limits.
+ */
+export const cveCache = mysqlTable("cve_cache", {
+  id: int("id").autoincrement().primaryKey(),
+  /** CVE identifier (e.g., "CVE-2021-44228") */
+  cveId: varchar("cveId", { length: 64 }).notNull().unique(),
+  /** Vulnerability description */
+  description: text("description"),
+  /** CVSS v3.1 base score (0.0 - 10.0) */
+  cvssV3Score: float("cvssV3Score"),
+  /** CVSS v3.1 severity: LOW, MEDIUM, HIGH, CRITICAL */
+  cvssV3Severity: varchar("cvssV3Severity", { length: 16 }),
+  /** CVSS v3.1 vector string */
+  cvssV3Vector: varchar("cvssV3Vector", { length: 256 }),
+  /** CVSS v4.0 base score if available */
+  cvssV4Score: float("cvssV4Score"),
+  /** CVSS v4.0 severity */
+  cvssV4Severity: varchar("cvssV4Severity", { length: 16 }),
+  /** CWE identifiers as JSON array */
+  cweIds: json("cweIds"),
+  /** Affected CPE configurations as JSON */
+  affectedProducts: json("affectedProducts"),
+  /** Reference URLs as JSON array */
+  references: json("references"),
+  /** Published date */
+  publishedDate: timestamp("publishedDate"),
+  /** Last modified date from NVD */
+  lastModifiedDate: timestamp("lastModifiedDate"),
+  /** Whether this CVE is in CISA KEV catalog */
+  isKev: boolean("isKev").default(false).notNull(),
+  /** Source of the data (nvd, circl, etc.) */
+  source: varchar("source", { length: 32 }).default("nvd").notNull(),
+  /** Raw JSON response for full details */
+  rawJson: json("rawJson"),
+  /** When this cache entry was fetched */
+  fetchedAt: timestamp("fetchedAt").defaultNow().notNull(),
+  /** Cache TTL - entries older than this should be refreshed */
+  expiresAt: timestamp("expiresAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CveEntry = typeof cveCache.$inferSelect;
+export type InsertCveEntry = typeof cveCache.$inferInsert;
+
+/**
+ * CVE Service Mapping — maps service+version to known CVEs for quick lookup.
+ */
+export const cveServiceMap = mysqlTable("cve_service_map", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Service name (e.g., "openssh", "apache", "nginx") */
+  serviceName: varchar("serviceName", { length: 256 }).notNull(),
+  /** Product name (e.g., "OpenSSH", "Apache httpd") */
+  product: varchar("product", { length: 256 }),
+  /** Version string (e.g., "8.9", "2.4.52") */
+  version: varchar("version", { length: 128 }),
+  /** CPE string for this service */
+  cpeName: varchar("cpeName", { length: 512 }),
+  /** CVE ID linked to this service */
+  cveId: varchar("cveId", { length: 64 }).notNull(),
+  /** CVSS score for quick sorting */
+  cvssScore: float("cvssScore"),
+  /** Severity for quick filtering */
+  severity: varchar("severity", { length: 16 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CveServiceMapEntry = typeof cveServiceMap.$inferSelect;
+export type InsertCveServiceMapEntry = typeof cveServiceMap.$inferInsert;

@@ -311,7 +311,11 @@ export default function HostDetail() {
                                   </span>
                                 </div>
                               </td>
-                              <td className="py-3 px-4 text-foreground/80">{port.service}</td>
+                              <td className="py-3 px-4 text-foreground/80">
+                                <Link href={`/tools/cve?service=${encodeURIComponent(port.service)}&version=${encodeURIComponent(port.version || "")}`}>
+                                  <span className="hover:text-purple-400 cursor-pointer transition-colors underline decoration-dotted underline-offset-2">{port.service}</span>
+                                </Link>
+                              </td>
                               <td className="py-3 px-4 text-muted-foreground font-mono text-xs">{port.version || "—"}</td>
                               <td className="py-3 px-4">
                                 <Badge className={`${risk.bg} ${risk.text} ${risk.border} border text-[10px] capitalize`}>
@@ -416,6 +420,14 @@ export default function HostDetail() {
                         <div className="flex items-center gap-3 mt-2">
                           <span className="text-[10px] text-muted-foreground">Port: <span className="text-cyan-400 font-mono">{vuln.port}</span></span>
                           <span className="text-[10px] text-muted-foreground">CVSS: <span className="text-foreground font-mono">{vuln.cvss}</span></span>
+                          {vuln.id.startsWith("CVE-") && (
+                            <Link href={`/tools/cve?q=${vuln.id}`}>
+                              <span className="inline-flex items-center gap-1 text-[10px] text-red-400 hover:text-red-300 cursor-pointer transition-colors">
+                                <ExternalLink className="w-3 h-3" />
+                                View in CVE Lookup
+                              </span>
+                            </Link>
+                          )}
                         </div>
                       </div>
                       <div className="shrink-0">

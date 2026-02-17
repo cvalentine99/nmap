@@ -4,7 +4,7 @@
  * Shows scan results with hosts, ports, services, and script output
  */
 import { useState, useMemo } from "react";
-import { useRoute } from "wouter";
+import { useRoute, Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -347,6 +347,7 @@ export default function ScanResults() {
                             <th className="text-left py-2 px-3 text-[11px] text-muted-foreground font-medium">Service</th>
                             <th className="text-left py-2 px-3 text-[11px] text-muted-foreground font-medium">Version</th>
                             <th className="text-left py-2 px-3 text-[11px] text-muted-foreground font-medium">Risk</th>
+                            <th className="text-left py-2 px-3 text-[11px] text-muted-foreground font-medium">CVE</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -364,6 +365,14 @@ export default function ScanResults() {
                               <td className="py-2.5 px-3 text-xs text-foreground">{port.service}</td>
                               <td className="py-2.5 px-3 text-xs text-muted-foreground font-mono">{port.version || "—"}</td>
                               <td className="py-2.5 px-3"><RiskBadge risk={port.risk} /></td>
+                              <td className="py-2.5 px-3">
+                                <Link href={`/tools/cve?service=${encodeURIComponent(port.service)}&version=${encodeURIComponent(port.version || "")}`}>
+                                  <button className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors">
+                                    <Shield className="w-3 h-3" />
+                                    CVEs
+                                  </button>
+                                </Link>
+                              </td>
                             </tr>
                           ))}
                         </tbody>

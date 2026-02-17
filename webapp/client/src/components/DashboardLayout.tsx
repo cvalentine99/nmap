@@ -27,6 +27,7 @@ import {
   Server,
   Network,
   Lock,
+  Bug,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -63,6 +64,7 @@ const navGroups: NavGroup[] = [
       { icon: Network, label: "Network Topology", href: "/tools/topology" },
       { icon: Server, label: "Host Detail", href: "/host/detail" },
       { icon: Lock, label: "CIDR Scope", href: "/tools/cidr" },
+      { icon: Bug, label: "CVE Lookup", href: "/tools/cve" },
     ],
   },
   {

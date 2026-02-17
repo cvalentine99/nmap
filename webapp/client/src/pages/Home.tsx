@@ -77,7 +77,7 @@ const quickActions = [
   { label: "NSE Scripts", icon: Target, href: "/tools/nse", color: "text-green-400", borderColor: "border-green-500/30", hoverBg: "hover:bg-green-500/10" },
   { label: "Live Monitor", icon: Cpu, href: "/scan/live", color: "text-orange-400", borderColor: "border-orange-500/30", hoverBg: "hover:bg-orange-500/10" },
   { label: "Topology Map", icon: Radio, href: "/tools/topology", color: "text-yellow-400", borderColor: "border-yellow-500/30", hoverBg: "hover:bg-yellow-500/10" },
-  { label: "Vuln Assessment", icon: Shield, href: "/scan/new", color: "text-red-400", borderColor: "border-red-500/30", hoverBg: "hover:bg-red-500/10" },
+  { label: "CVE Lookup", icon: Shield, href: "/tools/cve", color: "text-red-400", borderColor: "border-red-500/30", hoverBg: "hover:bg-red-500/10" },
 ];
 
 const recentThreats = [

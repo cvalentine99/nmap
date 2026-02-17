@@ -17,6 +17,10 @@ import {
   executeScan, cancelScan, getActiveScans,
   getNmapVersion, checkCudaAvailability, buildNmapCommand,
 } from "./nmap-service";
+import {
+  lookupCveById, searchCveByKeyword, searchCveByCpe,
+  lookupCveForService, getCachedCves, buildCpeFromService,
+} from "./cve-service";
 
 export const appRouter = router({
   system: systemRouter,
@@ -286,6 +290,87 @@ export const appRouter = router({
       const devices = await listCudaDevices();
       return { ...cuda, persistedDevices: devices };
     }),
+  }),
+
+  // ─── CVE Lookup ────────────────────────────────────────────────
+
+  cve: router({
+    /** Look up a single CVE by ID */
+    getById: publicProcedure
+      .input(z.object({ cveId: z.string().min(1) }))
+      .query(async ({ input }) => {
+        const result = await lookupCveById(input.cveId);
+        return result;
+      }),
+
+    /** Search CVEs by keyword */
+    search: publicProcedure
+      .input(z.object({
+        query: z.string().min(1),
+        severity: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]).optional(),
+        resultsPerPage: z.number().min(1).max(100).optional().default(20),
+        startIndex: z.number().min(0).optional().default(0),
+      }))
+      .query(async ({ input }) => {
+        // If it looks like a CVE ID, do a direct lookup
+        if (/^CVE-\d{4}-\d{4,}$/i.test(input.query.trim())) {
+          const result = await lookupCveById(input.query.trim().toUpperCase());
+          return {
+            totalResults: result ? 1 : 0,
+            resultsPerPage: 1,
+            startIndex: 0,
+            results: result ? [result] : [],
+          };
+        }
+        // If it looks like a CPE, search by CPE
+        if (input.query.startsWith("cpe:")) {
+          return searchCveByCpe(input.query, {
+            resultsPerPage: input.resultsPerPage,
+            startIndex: input.startIndex,
+          });
+        }
+        // Otherwise keyword search
+        return searchCveByKeyword(input.query, {
+          resultsPerPage: input.resultsPerPage,
+          startIndex: input.startIndex,
+          severity: input.severity,
+        });
+      }),
+
+    /** Look up CVEs for a discovered service+version */
+    forService: publicProcedure
+      .input(z.object({
+        service: z.string().min(1),
+        product: z.string().optional(),
+        version: z.string().optional(),
+      }))
+      .query(async ({ input }) => {
+        return lookupCveForService(input.service, input.product, input.version);
+      }),
+
+    /** Build CPE from service info (utility) */
+    buildCpe: publicProcedure
+      .input(z.object({
+        service: z.string().min(1),
+        product: z.string().optional(),
+        version: z.string().optional(),
+      }))
+      .query(async ({ input }) => {
+        const cpe = buildCpeFromService(input.service, input.product, input.version);
+        return { cpe };
+      }),
+
+    /** Get cached CVEs from database */
+    cached: publicProcedure
+      .input(z.object({
+        limit: z.number().min(1).max(100).optional().default(50),
+        offset: z.number().min(0).optional().default(0),
+        severity: z.string().optional(),
+        search: z.string().optional(),
+      }))
+      .query(async ({ input }) => {
+        return getCachedCves(input);
+      }),
   }),
 
   // ─── System Info ───────────────────────────────────────────────
